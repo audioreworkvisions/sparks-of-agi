@@ -1,0 +1,1 @@
+"use strict";const n=require("electron");n.contextBridge.exposeInMainWorld("electronAPI",{sendToPython:e=>n.ipcRenderer.send("to-python",e),onFromPython:e=>{n.ipcRenderer.on("from-python",(o,r)=>e(r))},removeListener:e=>{n.ipcRenderer.removeAllListeners(e)}});
