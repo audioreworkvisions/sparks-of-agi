@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain } from 'electron';
+import { app, BrowserWindow, ipcMain, desktopCapturer } from 'electron';
 import { spawn } from 'child_process';
 import { fileURLToPath } from 'url';
 import path from 'path';
@@ -48,6 +48,29 @@ ipcMain.on('to-python', (_, message) => {
     });
   } else {
     console.error('Python process is not running.');
+  }
+});
+
+// Screen Sharing IPC handlers
+ipcMain.handle('start-screen-share', async () => {
+  try {
+    const sources = await desktopCapturer.getSources({
+      types: ['screen'],
+      thumbnailSize: { width: 1920, height: 1080 }
+    });
+    if (sources.length === 0) {
+      throw new Error('No screen sources found');
+    }
+    return sources[0].id;
+  } catch (error) {
+    console.error('Failed to start screen sharing:', error);
+    throw error;
+  }
+});
+
+ipcMain.on('stop-screen-share', () => {
+  if (pythonProcess) {
+    pythonProcess.stdin.write('STOP_SCREEN_SHARE\n');
   }
 });
 
