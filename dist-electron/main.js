@@ -1,40 +1,52 @@
-import { ipcMain as a, app as e, BrowserWindow as l } from "electron";
-import { spawn as d } from "child_process";
-import { fileURLToPath as c } from "url";
-import n from "path";
-const p = c(import.meta.url), r = n.dirname(p);
-let o;
-function h() {
-  new l({
+import { ipcMain, app, BrowserWindow } from "electron";
+import { spawn } from "child_process";
+import { fileURLToPath } from "url";
+import path from "path";
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+let pythonProcess;
+function createWindow() {
+  const win = new BrowserWindow({
     width: 800,
     height: 600,
     webPreferences: {
-      preload: n.join(r, "../dist-electron/preload.mjs"),
+      preload: path.join(__dirname, "../dist-electron/preload.mjs"),
       // Preload-Skript einbinden
-      contextIsolation: !0,
-      nodeIntegration: !0
+      contextIsolation: true,
+      nodeIntegration: true
       // Ermöglicht Node.js APIs im Renderer
     }
-  }).loadFile(n.join(r, "../dist/index.html"));
+  });
+  win.loadFile(path.join(__dirname, "../dist/index.html"));
 }
-function m() {
-  o = d("python", [n.join(r, "assistant.py")]), o.stdout.on("data", (t) => {
-    console.log(`Python Output: ${t.toString()}`);
-  }), o.stderr.on("data", (t) => {
-    console.error(`Python Error: ${t.toString()}`);
-  }), o.on("close", () => {
+function startPythonBackend() {
+  pythonProcess = spawn("python", [path.join(__dirname, "assistant.py")]);
+  pythonProcess.stdout.on("data", (data) => {
+    console.log(`Python Output: ${data.toString()}`);
+  });
+  pythonProcess.stderr.on("data", (data) => {
+    console.error(`Python Error: ${data.toString()}`);
+  });
+  pythonProcess.on("close", () => {
     console.log("Python Backend beendet.");
   });
 }
-a.on("to-python", (t, i) => {
-  o ? (o.stdin.write(`${i}
-`), o.stdout.once("data", (s) => {
-    console.log(`One-Time Python Output: ${s.toString()}`);
-  })) : console.error("Python process is not running.");
+ipcMain.on("to-python", (_, message) => {
+  if (pythonProcess) {
+    pythonProcess.stdin.write(`${message}
+`);
+    pythonProcess.stdout.once("data", (data) => {
+      console.log(`One-Time Python Output: ${data.toString()}`);
+    });
+  } else {
+    console.error("Python process is not running.");
+  }
 });
-e.whenReady().then(() => {
-  m(), h();
+app.whenReady().then(() => {
+  startPythonBackend();
+  createWindow();
 });
-e.on("window-all-closed", () => {
-  o && o.kill(), process.platform !== "darwin" && e.quit();
+app.on("window-all-closed", () => {
+  if (pythonProcess) pythonProcess.kill();
+  if (process.platform !== "darwin") app.quit();
 });
