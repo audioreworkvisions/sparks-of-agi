@@ -71,10 +71,35 @@ class WebcamStream:
     def __exit__(self, exc_type, exc_value, exc_traceback):
         self.stream.release()
 
+class ScreenStream:
+    def __init__(self):
+        self.running = False
+        self.frame = None
+        self.lock = Lock()
+
+    def update_frame(self, frame):
+        self.lock.acquire()
+        self.frame = frame
+        self.lock.release()
+
+    def read_as_base64(self):
+        if not self.frame:
+            return None
+        self.lock.acquire()
+        frame = self.frame.copy()
+        self.lock.release()
+        _, buffer = imencode(".jpeg", frame)
+        return base64.b64encode(buffer).decode("utf-8")
 
 class Assistant:
     def __init__(self, model):
         self.chain = self._create_inference_chain(model)
+        self.active_stream = 'webcam'  # Default to webcam stream
+
+    def switch_stream(self, stream_type):
+        if stream_type not in ['webcam', 'screen']:
+            raise ValueError("Stream type must be either 'webcam' or 'screen'")
+        self.active_stream = stream_type
 
     def answer(self, prompt, image):
         if not prompt:
@@ -145,6 +170,7 @@ class Assistant:
 
 
 webcam_stream = WebcamStream().start()
+screen_stream = ScreenStream()  # Initialize screen stream
 
 # model = ChatGoogleGenerativeAI(model="gemini-1.5-flash-latest")
 
@@ -157,7 +183,12 @@ assistant = Assistant(model)
 def audio_callback(recognizer, audio):
     try:
         prompt = recognizer.recognize_whisper(audio, model="base", language="english")
-        assistant.answer(prompt, webcam_stream.read(encode=True))
+        # Use the active stream for capturing frames
+        if assistant.active_stream == 'webcam':
+            frame = webcam_stream.read(encode=True)
+        else:
+            frame = screen_stream.read_as_base64().encode()
+        assistant.answer(prompt, frame)
 
     except UnknownValueError:
         print("There was an error processing the audio.")
@@ -171,12 +202,27 @@ stop_listening = recognizer.listen_in_background(microphone, audio_callback)
 
 try:
     while True:
-        frame_base64 = webcam_stream.read_as_base64()
+        # Send frames from active stream
+        if assistant.active_stream == 'webcam':
+            frame_base64 = webcam_stream.read_as_base64()
+        else:
+            frame_base64 = screen_stream.read_as_base64()
+
         if frame_base64:
-            # Sende das Base64-encoded Bild als JSON-String
-            message = json.dumps({"image": frame_base64})
+            # Send the Base64-encoded frame as JSON string
+            message = json.dumps({
+                "type": assistant.active_stream,
+                "image": frame_base64
+            })
             print(message)
             sys.stdout.flush()
+
+        # Check for commands from stdin
+        if sys.stdin.isatty():  # Only try to read if stdin is available
+            command = sys.stdin.readline().strip()
+            if command == "STOP_SCREEN_SHARE":
+                assistant.switch_stream('webcam')
+
 except KeyboardInterrupt:
     webcam_stream.stop()
     stop_listening(wait_for_stop=False)
