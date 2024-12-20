@@ -43,9 +43,7 @@ function startPythonBackend() {
 ipcMain.on('to-python', (_, message) => {
   if (pythonProcess) {
     pythonProcess.stdin.write(`${message}\n`);
-    pythonProcess.stdout.once('data', (data: Buffer) => {
-      console.log(`One-Time Python Output: ${data.toString()}`);
-    });
+    // Don't wait for output as assistant.answer will handle response
   } else {
     console.error('Python process is not running.');
   }
