@@ -6,7 +6,7 @@
       <p>Antwort von Python: {{ response }}</p>
     </div>
   </template>
-  
+
   <script>
   export default {
     data() {
@@ -17,7 +17,7 @@
     },
     methods: {
       sendMessage() {
-        window.electronAPI.sendToPython(this.message);
+        window.electronAPI.sendToPython(`TEXT_INPUT:${this.message}`);
       },
     },
     mounted() {

@@ -1,5 +1,6 @@
 import base64
 from threading import Lock, Thread
+import time
 
 import cv2
 import openai
@@ -43,6 +44,7 @@ class WebcamStream:
             self.lock.acquire()
             self.frame = frame
             self.lock.release()
+            time.sleep(0.033)  # Limit to ~30 fps
 
     def read(self, encode=False):
         self.lock.acquire()
@@ -183,7 +185,7 @@ assistant = Assistant(model)
 def audio_callback(recognizer, audio):
     try:
         prompt = recognizer.recognize_whisper(audio, model="base", language="english")
-        # Use the active stream for capturing frames
+        # Capture single frame based on active stream
         if assistant.active_stream == 'webcam':
             frame = webcam_stream.read(encode=True)
         else:
@@ -202,20 +204,19 @@ stop_listening = recognizer.listen_in_background(microphone, audio_callback)
 
 try:
     while True:
-        # Send frames from active stream
-        if assistant.active_stream == 'webcam':
-            frame_base64 = webcam_stream.read_as_base64()
-        else:
-            frame_base64 = screen_stream.read_as_base64()
-
-        if frame_base64:
-            # Send the Base64-encoded frame as JSON string
-            message = json.dumps({
-                "type": assistant.active_stream,
-                "image": frame_base64
-            })
-            print(message)
-            sys.stdout.flush()
+        # Wait for input events instead of continuous streaming
+        if sys.stdin.isatty():
+            command = sys.stdin.readline().strip()
+            if command == "STOP_SCREEN_SHARE":
+                assistant.switch_stream('webcam')
+            elif command.startswith("TEXT_INPUT:"):
+                text = command[11:]  # Remove TEXT_INPUT: prefix
+                # Capture single frame based on active stream
+                if assistant.active_stream == 'webcam':
+                    frame = webcam_stream.read(encode=True)
+                else:
+                    frame = screen_stream.read_as_base64().encode()
+                assistant.answer(text, frame)
 
         # Check for commands from stdin
         if sys.stdin.isatty():  # Only try to read if stdin is available
