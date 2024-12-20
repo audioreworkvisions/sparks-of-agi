@@ -23,4 +23,23 @@ contextBridge.exposeInMainWorld('electronAPI', {
   removeListener: (channel: string) => {
     ipcRenderer.removeAllListeners(channel);
   },
+
+  /**
+   * Start screen sharing and return the source ID
+   * @returns Promise that resolves when screen sharing starts
+   */
+  startScreenShare: () => ipcRenderer.invoke('start-screen-share'),
+
+  /**
+   * Stop screen sharing
+   */
+  stopScreenShare: () => ipcRenderer.send('stop-screen-share'),
+
+  /**
+   * Listen for screen frame updates
+   * @param callback - The callback to handle incoming frame data
+   */
+  onScreenFrame: (callback: (data: string) => void) => {
+    ipcRenderer.on('screen-frame', (_, data) => callback(data));
+  },
 });
