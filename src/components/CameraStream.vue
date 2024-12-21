@@ -13,9 +13,12 @@
       };
     },
     mounted() {
-      window.electronAPI.onCameraFrame((imageData) => {
+      window.electronAPI.onFromPython((imageData) => {
         this.imageSrc = `data:image/jpeg;base64,${imageData}`;
       });
+    },
+    beforeUnmount() {
+      window.electronAPI.removeListener('from-python');
     },
   };
   </script>
@@ -27,10 +30,3 @@
     box-shadow: 0 0 10px rgba(0, 240, 255, 0.2);
   }
   </style>
-  
-  
-  
-  
-  
-  
-  

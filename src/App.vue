@@ -40,7 +40,7 @@ export default {
   methods: {
     setActiveStream(type) {
       this.activeStream = type;
-      window.electron.switchStream(type);
+      window.electronAPI.sendToPython(`SWITCH_STREAM:${type}`);
     },
   },
 };

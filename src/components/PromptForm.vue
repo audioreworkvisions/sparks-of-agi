@@ -104,5 +104,3 @@
     box-shadow: 0 0 10px rgba(255, 0, 153, 0.2);
   }
   </style>
-  
-  
