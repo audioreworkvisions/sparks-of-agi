@@ -72,6 +72,25 @@ ipcMain.on('stop-screen-share', () => {
   }
 });
 
+// Handle getting current frame from active stream
+ipcMain.handle('get-current-frame', async () => {
+  if (pythonProcess) {
+    return new Promise((resolve) => {
+      pythonProcess.stdin.write('GET_CURRENT_FRAME\n');
+      // Set up a one-time listener for the frame response
+      const frameListener = (data: Buffer) => {
+        const response = data.toString().trim();
+        if (response.startsWith('FRAME:')) {
+          pythonProcess.stdout.removeListener('data', frameListener);
+          resolve(response.slice(6)); // Remove 'FRAME:' prefix
+        }
+      };
+      pythonProcess.stdout.on('data', frameListener);
+    });
+  }
+  return null;
+});
+
 app.whenReady().then(() => {
   startPythonBackend(); // Python starten
   createWindow();
