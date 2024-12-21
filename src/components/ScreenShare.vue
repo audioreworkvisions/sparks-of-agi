@@ -48,6 +48,7 @@ export default {
     if (this.isSharing) {
       this.stopScreenShare();
     }
+    window.electronAPI.removeListener('screen-frame');
   },
 };
 </script>
