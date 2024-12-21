@@ -1,64 +1,85 @@
-import { ipcMain as r, desktopCapturer as d, app as s, BrowserWindow as l } from "electron";
-import { spawn as h } from "child_process";
-import { fileURLToPath as p } from "url";
-import o from "path";
-const u = p(import.meta.url), i = o.dirname(u);
-let t;
-function m() {
-  new l({
+import { ipcMain, desktopCapturer, app, BrowserWindow } from "electron";
+import { spawn } from "child_process";
+import { fileURLToPath } from "url";
+import path from "path";
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+let pythonProcess;
+function createWindow() {
+  const win = new BrowserWindow({
     width: 800,
     height: 600,
     webPreferences: {
-      preload: o.join(i, "../dist-electron/preload.mjs"),
+      preload: path.join(__dirname, "../dist-electron/preload.mjs"),
       // Preload-Skript einbinden
-      contextIsolation: !0,
-      nodeIntegration: !0
+      contextIsolation: true,
+      nodeIntegration: true
       // Ermöglicht Node.js APIs im Renderer
     }
-  }).loadFile(o.join(i, "../dist/index.html"));
+  });
+  win.loadFile(path.join(__dirname, "../dist/index.html"));
 }
-function w() {
-  t = h("python", [o.join(i, "assistant.py")]), t.stdout.on("data", (e) => {
-    console.log(`Python Output: ${e.toString()}`);
-  }), t.stderr.on("data", (e) => {
-    console.error(`Python Error: ${e.toString()}`);
-  }), t.on("close", () => {
+function startPythonBackend() {
+  pythonProcess = spawn("python", [path.join(__dirname, "assistant.py")]);
+  pythonProcess.stdout.on("data", (data) => {
+    console.log(`Python Output: ${data.toString()}`);
+  });
+  pythonProcess.stderr.on("data", (data) => {
+    console.error(`Python Error: ${data.toString()}`);
+  });
+  pythonProcess.on("close", () => {
     console.log("Python Backend beendet.");
   });
 }
-r.on("to-python", (e, n) => {
-  t ? t.stdin.write(`${n}
-`) : console.error("Python process is not running.");
+ipcMain.on("to-python", (_, message) => {
+  if (pythonProcess) {
+    pythonProcess.stdin.write(`${message}
+`);
+  } else {
+    console.error("Python process is not running.");
+  }
 });
-r.handle("start-screen-share", async () => {
+ipcMain.handle("start-screen-share", async () => {
   try {
-    const e = await d.getSources({
+    const sources = await desktopCapturer.getSources({
       types: ["screen"],
       thumbnailSize: { width: 1920, height: 1080 }
     });
-    if (e.length === 0)
+    if (sources.length === 0) {
       throw new Error("No screen sources found");
-    return e[0].id;
-  } catch (e) {
-    throw console.error("Failed to start screen sharing:", e), e;
+    }
+    return sources[0].id;
+  } catch (error) {
+    console.error("Failed to start screen sharing:", error);
+    throw error;
   }
 });
-r.on("stop-screen-share", () => {
-  t && t.stdin.write(`STOP_SCREEN_SHARE
-`);
+ipcMain.on("stop-screen-share", () => {
+  if (pythonProcess) {
+    pythonProcess.stdin.write("STOP_SCREEN_SHARE\n");
+  }
 });
-r.handle("get-current-frame", async () => t ? new Promise((e) => {
-  t.stdin.write(`GET_CURRENT_FRAME
-`);
-  const n = (c) => {
-    const a = c.toString().trim();
-    a.startsWith("FRAME:") && (t.stdout.removeListener("data", n), e(a.slice(6)));
-  };
-  t.stdout.on("data", n);
-}) : null);
-s.whenReady().then(() => {
-  w(), m();
+ipcMain.handle("get-current-frame", async () => {
+  if (pythonProcess) {
+    return new Promise((resolve) => {
+      pythonProcess.stdin.write("GET_CURRENT_FRAME\n");
+      const frameListener = (data) => {
+        const response = data.toString().trim();
+        if (response.startsWith("FRAME:")) {
+          pythonProcess.stdout.removeListener("data", frameListener);
+          resolve(response.slice(6));
+        }
+      };
+      pythonProcess.stdout.on("data", frameListener);
+    });
+  }
+  return null;
 });
-s.on("window-all-closed", () => {
-  t && t.kill(), process.platform !== "darwin" && s.quit();
+app.whenReady().then(() => {
+  startPythonBackend();
+  createWindow();
+});
+app.on("window-all-closed", () => {
+  if (pythonProcess) pythonProcess.kill();
+  if (process.platform !== "darwin") app.quit();
 });
