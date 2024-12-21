@@ -42,4 +42,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
   onScreenFrame: (callback: (data: string) => void) => {
     ipcRenderer.on('screen-frame', (_, data) => callback(data));
   },
+
+  /**
+   * Get the current frame from the active stream (webcam or screen share)
+   * @returns Promise that resolves with the base64 encoded frame
+   */
+  getCurrentFrame: () => ipcRenderer.invoke('get-current-frame'),
 });

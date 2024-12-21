@@ -6,7 +6,7 @@
     </div>
     <div v-else>
       <button @click="stopScreenShare">Stop Sharing</button>
-      <img :src="screenSrc" alt="Screen Share" style="width: 100%; max-width: 800px;" />
+      <img :src="screenSrc" alt="Screen Share" style="width: 640px; max-width: 100%;" />
     </div>
   </div>
 </template>
@@ -75,8 +75,9 @@ button:hover {
 }
 
 img {
-  border: 1px solid #ddd;
-  border-radius: 4px;
+  border: 2px solid #00F0FF;
+  border-radius: 8px;
   margin-top: 1rem;
+  box-shadow: 0 0 10px rgba(0, 240, 255, 0.2);
 }
 </style>

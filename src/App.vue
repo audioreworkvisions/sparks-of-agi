@@ -1,8 +1,7 @@
 <template>
   <div id="app">
     <header>
-      <h1>Alloy Ada System</h1>
-      <h2>Electron + Vue + Python Integration</h2>
+      <h1>AVA-App</h1>
     </header>
     <main>
       <div class="stream-container">
@@ -51,19 +50,23 @@ export default {
 #app {
   font-family: Arial, sans-serif;
   text-align: center;
-  color: #333;
+  color: #00F0FF;
   margin: 0;
   padding: 0;
+  background-color: #1A1A1A;
+  min-height: 100vh;
 }
 
 header {
-  background-color: #282c34;
+  background-color: #1A1A1A;
   padding: 20px;
-  color: white;
+  color: #00F0FF;
+  border-bottom: 2px solid #FF0099;
 }
 
 main {
   padding: 20px;
+  background-color: #1A1A1A;
 }
 
 .stream-container {
@@ -77,27 +80,30 @@ main {
 .controls button {
   margin: 0 10px;
   padding: 8px 16px;
-  border: 2px solid #282c34;
+  border: 2px solid #00F0FF;
   border-radius: 4px;
-  background: white;
+  background: transparent;
+  color: #00F0FF;
   cursor: pointer;
   transition: all 0.3s ease;
 }
 
 .controls button.active {
-  background: #282c34;
-  color: white;
+  background: #00F0FF;
+  color: #1A1A1A;
 }
 
 .controls button:hover {
-  background: #282c34;
-  color: white;
+  background: #FF0099;
+  border-color: #FF0099;
+  color: #1A1A1A;
 }
 
 footer {
-  background-color: #f1f1f1;
+  background-color: #1A1A1A;
   padding: 10px;
   font-size: 0.9em;
-  color: #555;
+  color: #FF0099;
+  border-top: 2px solid #FF0099;
 }
 </style>

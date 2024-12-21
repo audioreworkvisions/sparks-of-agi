@@ -1,7 +1,7 @@
 <template>
     <div>
       <h2>Kamera-Stream</h2>
-      <img :src="imageSrc" alt="Kamera Stream" style="width: 100%; max-width: 800px;" />
+      <img :src="imageSrc" alt="Kamera Stream" style="width: 640px; max-width: 100%;" />
     </div>
   </template>
   
@@ -22,8 +22,15 @@
   
   <style scoped>
   img {
-    border: 1px solid #ccc;
-    border-radius: 5px;
+    border: 2px solid #00F0FF;
+    border-radius: 8px;
+    box-shadow: 0 0 10px rgba(0, 240, 255, 0.2);
   }
   </style>
+  
+  
+  
+  
+  
+  
   

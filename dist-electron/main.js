@@ -1,69 +1,64 @@
-import { ipcMain, desktopCapturer, app, BrowserWindow } from "electron";
-import { spawn } from "child_process";
-import { fileURLToPath } from "url";
-import path from "path";
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-let pythonProcess;
-function createWindow() {
-  const win = new BrowserWindow({
+import { ipcMain as r, desktopCapturer as d, app as s, BrowserWindow as l } from "electron";
+import { spawn as h } from "child_process";
+import { fileURLToPath as p } from "url";
+import o from "path";
+const u = p(import.meta.url), i = o.dirname(u);
+let t;
+function m() {
+  new l({
     width: 800,
     height: 600,
     webPreferences: {
-      preload: path.join(__dirname, "../dist-electron/preload.mjs"),
+      preload: o.join(i, "../dist-electron/preload.mjs"),
       // Preload-Skript einbinden
-      contextIsolation: true,
-      nodeIntegration: true
+      contextIsolation: !0,
+      nodeIntegration: !0
       // Ermöglicht Node.js APIs im Renderer
     }
-  });
-  win.loadFile(path.join(__dirname, "../dist/index.html"));
+  }).loadFile(o.join(i, "../dist/index.html"));
 }
-function startPythonBackend() {
-  pythonProcess = spawn("python", [path.join(__dirname, "assistant.py")]);
-  pythonProcess.stdout.on("data", (data) => {
-    console.log(`Python Output: ${data.toString()}`);
-  });
-  pythonProcess.stderr.on("data", (data) => {
-    console.error(`Python Error: ${data.toString()}`);
-  });
-  pythonProcess.on("close", () => {
+function w() {
+  t = h("python", [o.join(i, "assistant.py")]), t.stdout.on("data", (e) => {
+    console.log(`Python Output: ${e.toString()}`);
+  }), t.stderr.on("data", (e) => {
+    console.error(`Python Error: ${e.toString()}`);
+  }), t.on("close", () => {
     console.log("Python Backend beendet.");
   });
 }
-ipcMain.on("to-python", (_, message) => {
-  if (pythonProcess) {
-    pythonProcess.stdin.write(`${message}
-`);
-  } else {
-    console.error("Python process is not running.");
-  }
+r.on("to-python", (e, n) => {
+  t ? t.stdin.write(`${n}
+`) : console.error("Python process is not running.");
 });
-ipcMain.handle("start-screen-share", async () => {
+r.handle("start-screen-share", async () => {
   try {
-    const sources = await desktopCapturer.getSources({
+    const e = await d.getSources({
       types: ["screen"],
       thumbnailSize: { width: 1920, height: 1080 }
     });
-    if (sources.length === 0) {
+    if (e.length === 0)
       throw new Error("No screen sources found");
-    }
-    return sources[0].id;
-  } catch (error) {
-    console.error("Failed to start screen sharing:", error);
-    throw error;
+    return e[0].id;
+  } catch (e) {
+    throw console.error("Failed to start screen sharing:", e), e;
   }
 });
-ipcMain.on("stop-screen-share", () => {
-  if (pythonProcess) {
-    pythonProcess.stdin.write("STOP_SCREEN_SHARE\n");
-  }
+r.on("stop-screen-share", () => {
+  t && t.stdin.write(`STOP_SCREEN_SHARE
+`);
 });
-app.whenReady().then(() => {
-  startPythonBackend();
-  createWindow();
+r.handle("get-current-frame", async () => t ? new Promise((e) => {
+  t.stdin.write(`GET_CURRENT_FRAME
+`);
+  const n = (c) => {
+    const a = c.toString().trim();
+    a.startsWith("FRAME:") && (t.stdout.removeListener("data", n), e(a.slice(6)));
+  };
+  t.stdout.on("data", n);
+}) : null);
+s.whenReady().then(() => {
+  w(), m();
 });
-app.on("window-all-closed", () => {
-  if (pythonProcess) pythonProcess.kill();
-  if (process.platform !== "darwin") app.quit();
+s.on("window-all-closed", () => {
+  t && t.kill(), process.platform !== "darwin" && s.quit();
 });
