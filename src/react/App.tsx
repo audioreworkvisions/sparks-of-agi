@@ -1,4 +1,3 @@
-import React from 'react';
 import { ThemeProvider, Stack, IStackStyles } from '@fluentui/react';
 import { appTheme } from './theme';
 import { VideoPlayer } from './components/VideoPlayer';
@@ -8,7 +7,7 @@ function App() {
     root: {
       height: '100vh',
       padding: '20px',
-      backgroundColor: 'var(--background-color)',
+      backgroundColor: '#1f1f1f',
     }
   };
 

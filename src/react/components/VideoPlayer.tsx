@@ -26,10 +26,9 @@ export const VideoPlayer: React.FC<IVideoPlayerProps> = ({ className }) => {
       width: '42%', // Middle of 40-45% range
       aspectRatio: '16/9',
       position: 'relative',
-      backgroundColor: theme.palette.neutralLighter,
-      border: `2px solid ${theme.palette.themePrimary}`,
       borderRadius: '8px',
-      boxShadow: theme.effects.elevation4,
+      boxShadow: '0 4px 6px rgba(0, 0, 0, 0.3)',
+      background: theme.palette.black,
       overflow: 'hidden',
       margin: '0 auto',
       className,
