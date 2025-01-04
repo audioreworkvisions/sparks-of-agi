@@ -40,5 +40,10 @@ electron.contextBridge.exposeInMainWorld("electronAPI", {
    * Get the current frame from the active stream (webcam or screen share)
    * @returns Promise that resolves with the base64 encoded frame
    */
-  getCurrentFrame: () => electron.ipcRenderer.invoke("get-current-frame")
+  getCurrentFrame: () => electron.ipcRenderer.invoke("get-current-frame"),
+  /**
+   * Switch the active stream (webcam or screen share)
+   * @param streamType - The type of stream to switch to
+   */
+  switchStream: (streamType) => electron.ipcRenderer.send("to-python", `SWITCH_STREAM:${streamType}`)
 });
